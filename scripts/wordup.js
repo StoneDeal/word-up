@@ -53,8 +53,25 @@ function addNewWordSubmission(word) {
     // Do we already have a wordSubmission with this word?
     // TODO 21
     // replace the hardcoded 'false' with the real answer
-    var alreadyUsed = false;
+    // console.log(model.wordSubmissions.indexOf(word))
+    console.log(word);
+    var wordsLength = model.wordSubmissions.length;
+    var words = [];
 
+    for (i = 0; i < wordsLength; i++) {
+        words.push(model.wordSubmissions[i].word);
+    }
+    console.log(words)
+    
+    // var wordValues = Object.values(model.wordSubmissions)
+    // console.log((model.wordSubmissions).indexOf(word));
+    if (words.indexOf(word) > -1) {
+        var alreadyUsed = true;
+    }
+    else {
+        var alreadyUsed = false;
+    }
+    
     // if the word is valid and hasn't already been used, add it
     if (containsOnlyAllowedLetters(word) && alreadyUsed == false) {
         model.wordSubmissions.push({ word: word });
@@ -74,7 +91,7 @@ function checkIfWordIsReal(word) {
     // make an AJAX call to the Pearson API
     $.ajax({
         // TODO 13 what should the url be?
-        url: "www.todo13.com",
+        url: "http://api.pearson.com/v2/dictionaries/entries?headword=" + word,
         success: function(response) {
             console.log("We received a response from Pearson!");
 
@@ -85,10 +102,21 @@ function checkIfWordIsReal(word) {
             // Replace the 'true' below.
             // If the response contains any results, then the word is legitimate.
             // Otherwise, it is not.
-            var theAnswer = true;
+            if (response.results.length > 0) {
+                var theAnswer = true;
+            }
+            else {
+                var theAnswer = false;
+            }
 
             // TODO 15
             // Update the corresponding wordSubmission in the model
+            var words = model.wordSubmissions.map(function(submissions) {
+                if (word == submissions.word) {
+                    // submissions.append({ isRealWord: theAnswer });
+                    submissions.isRealWord = theAnswer;
+                }
+            });
 
 
             // re-render
@@ -147,7 +175,7 @@ function render() {
 
     // TODO 11
     // Render the word submissions
-    words = model.wordSubmissions.map(words)
+    var words = model.wordSubmissions.map(wordSubmissionChip)
     $("#word-submissions").append(words);
 
 
@@ -212,15 +240,28 @@ function wordSubmissionChip(wordSubmission) {
 
     // if we know the status of this word (real word or not), then add a green score or red X
     if (wordSubmission.hasOwnProperty("isRealWord")) {
-        var scoreChip = $("<span></span>").text("⟐");
         // TODO 17
         // give the scoreChip appropriate text content
+        if (wordSubmission.isRealWord == true) {
+            var content = wordScore(wordSubmission.word);
+        }
+        else {
+            var content = "X";
+        }
+        var scoreChip = $("<span></span>").text(content);
 
         // TODO 18
         // give the scoreChip appropriate css classes
+        if (wordSubmission.isRealWord == true) {
+            scoreChip.addClass("real-word");
+        }
+        else {
+            scoreChip.addClass("fake-word");
+        }
 
         // TODO 16
         // append scoreChip into wordChip
+        wordChip.append(scoreChip);
 
     }
 
@@ -318,7 +359,13 @@ function disallowedLettersInWord(word) {
 function containsOnlyAllowedLetters(word) {
     // TODO 12
     // Return the actual answer.
-    return true;
+    var disallowedList = disallowedLettersInWord(word)
+    if (disallowedList.length == 0) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 /**
@@ -349,7 +396,13 @@ function wordScore(word) {
     // TODO 19
     // Replace the empty list below.
     // Map the list of letters into a list of scores, one for each letter.
+    wordLength = letters.length
     var letterScores = [];
+    for (i = 0; i < wordLength; i++) {
+        var key = letters[i] ;
+        letterScores.push(scrabblePointsForEachLetter[key]);
+    }
+    // var letterScores = [];
 
     // return the total sum of the letter scores
     return letterScores.reduce(add, 0);
@@ -373,7 +426,7 @@ function currentScore() {
 
     // TODO 20
     // return the total sum of the word scores
-    return 0;
+    return wordScores.reduce(add, 0);
 }
 
 
